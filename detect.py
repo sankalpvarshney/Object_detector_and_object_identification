@@ -13,6 +13,7 @@ from utils.general import check_img_size, check_requirements, check_imshow, non_
     scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
 from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
+from utils.all_utils import crop_box
 
 
 def detect(save_img=False):
@@ -66,6 +67,9 @@ def detect(save_img=False):
         model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
     old_img_w = old_img_h = imgsz
     old_img_b = 1
+
+    # Object array List
+    object_list = []
 
     t0 = time.time()
     for path, img, im0s, vid_cap in dataset:
@@ -126,40 +130,41 @@ def detect(save_img=False):
                             f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
                     if save_img or view_img:  # Add bbox to image
-                        label = f'{names[int(cls)]} {conf:.2f}'
-                        plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=1)
+                        # label = f'{names[int(cls)]} {conf:.2f}'
+                        # plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=1)
+                        object_list.append(crop_box(xyxy,im0))
 
             # Print time (inference + NMS)
             print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
 
             # Stream results
-            if view_img:
-                cv2.imshow(str(p), im0)
-                cv2.waitKey(1)  # 1 millisecond
+    #         if view_img:
+    #             cv2.imshow(str(p), im0)
+    #             cv2.waitKey(1)  # 1 millisecond
 
-            # Save results (image with detections)
-            if save_img:
-                if dataset.mode == 'image':
-                    cv2.imwrite(save_path, im0)
-                    print(f" The image with the result is saved in: {save_path}")
-                else:  # 'video' or 'stream'
-                    if vid_path != save_path:  # new video
-                        vid_path = save_path
-                        if isinstance(vid_writer, cv2.VideoWriter):
-                            vid_writer.release()  # release previous video writer
-                        if vid_cap:  # video
-                            fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                            w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                            h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                        else:  # stream
-                            fps, w, h = 30, im0.shape[1], im0.shape[0]
-                            save_path += '.mp4'
-                        vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
-                    vid_writer.write(im0)
+    #         # Save results (image with detections)
+    #         if save_img:
+    #             if dataset.mode == 'image':
+    #                 cv2.imwrite(save_path, im0)
+    #                 print(f" The image with the result is saved in: {save_path}")
+    #             else:  # 'video' or 'stream'
+    #                 if vid_path != save_path:  # new video
+    #                     vid_path = save_path
+    #                     if isinstance(vid_writer, cv2.VideoWriter):
+    #                         vid_writer.release()  # release previous video writer
+    #                     if vid_cap:  # video
+    #                         fps = vid_cap.get(cv2.CAP_PROP_FPS)
+    #                         w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    #                         h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    #                     else:  # stream
+    #                         fps, w, h = 30, im0.shape[1], im0.shape[0]
+    #                         save_path += '.mp4'
+    #                     vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+    #                 vid_writer.write(im0)
 
-    if save_txt or save_img:
-        s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
-        #print(f"Results saved to {save_dir}{s}")
+    # if save_txt or save_img:
+    #     s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
+    #     #print(f"Results saved to {save_dir}{s}")
 
     print(f'Done. ({time.time() - t0:.3f}s)')
 
