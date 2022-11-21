@@ -265,3 +265,5 @@ fabric.properties
 env
 
 yolov7.pt
+yolov7x.pt
+backbone.pth
